@@ -1,0 +1,84 @@
+# Remembrall — service composition
+#
+# Phase 0: this file wires the shared network + persistent volumes and starts
+# Chroma (an off-the-shelf image). The custom-built services below are declared
+# but commented out; uncomment each in Phase 1 as it gains a Dockerfile and a
+# health endpoint, so `docker compose up` never references a missing build.
+
+services:
+  # --- Vector DB: Chroma (active) ------------------------------------------
+  vector-db:
+    image: chromadb/chroma:latest
+    restart: unless-stopped
+    volumes:
+      - chroma-data:/data
+    networks:
+      - remembrall
+    # Not published to the host — reachable internally at http://vector-db:8000
+    expose:
+      - "8000"
+
+  # --- Ingestion (Phase 1: add ingestion/Dockerfile, then uncomment) -------
+  # ingestion:
+  #   build: ./ingestion
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   volumes:
+  #     - uploads:/app/uploads
+  #   networks:
+  #     - remembrall
+  #   depends_on:
+  #     - vector-db
+
+  # --- API (Phase 1: add api/Dockerfile, then uncomment) -------------------
+  # api:
+  #   build: ./api
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   volumes:
+  #     - uploads:/app/uploads
+  #   networks:
+  #     - remembrall
+  #   depends_on:
+  #     - vector-db
+  #     - llm-gateway
+
+  # --- LLM gateway (Phase 1: add llm-gateway/Dockerfile, then uncomment) ---
+  # llm-gateway:
+  #   build: ./llm-gateway
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   networks:
+  #     - remembrall
+
+  # --- Frontend (Phase 1: add frontend/Dockerfile, then uncomment) ---------
+  # frontend:
+  #   build: ./frontend
+  #   restart: unless-stopped
+  #   networks:
+  #     - remembrall
+
+  # --- Reverse proxy: Caddy (Phase 6: add reverse-proxy/Caddyfile) ---------
+  # reverse-proxy:
+  #   image: caddy:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy-data:/data
+  #   networks:
+  #     - remembrall
+  #   depends_on:
+  #     - api
+  #     - frontend
+
+networks:
+  remembrall:
+    driver: bridge
+
+volumes:
+  chroma-data:
+  uploads:
+  # caddy-data:   # uncomment with the reverse-proxy service in Phase 6

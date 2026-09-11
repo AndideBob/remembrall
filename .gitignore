@@ -1,3 +1,32 @@
 # Local-only Claude working files (not tracked or pushed)
 CLAUDE.md
 claude/
+
+# Secrets / environment
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+
+# Data & runtime (persisted via Docker volumes, never committed)
+data/
+uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
