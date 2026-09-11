@@ -1,12 +1,17 @@
 # Remembrall — service composition
 #
-# Phase 0: this file wires the shared network + persistent volumes and starts
-# Chroma (an off-the-shelf image). The custom-built services below are declared
-# but commented out; uncomment each in Phase 1 as it gains a Dockerfile and a
-# health endpoint, so `docker compose up` never references a missing build.
+# Wires the shared internal network + persistent volumes and runs the stack.
+# Each application service exposes a /health endpoint used as its container
+# healthcheck. The frontend and reverse-proxy are declared but not yet active.
+
+x-healthcheck: &health
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 10s
 
 services:
-  # --- Vector DB: Chroma (active) ------------------------------------------
+  # --- Vector DB: Chroma ---------------------------------------------------
   vector-db:
     image: chromadb/chroma:latest
     restart: unless-stopped
@@ -18,47 +23,79 @@ services:
     expose:
       - "8000"
 
-  # --- Ingestion (Phase 1: add ingestion/Dockerfile, then uncomment) -------
-  # ingestion:
-  #   build: ./ingestion
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   volumes:
-  #     - uploads:/app/uploads
-  #   networks:
-  #     - remembrall
-  #   depends_on:
-  #     - vector-db
+  # --- Chroma admin UI -----------------------------------------------------
+  # Local development/inspection tool only — not for production use. Runs on the
+  # internal network so it reaches the database at http://vector-db:8000 without
+  # exposing the database itself; only this UI is published to the host.
+  chroma-admin:
+    image: fengzhichao/chromadb-admin
+    restart: unless-stopped
+    networks:
+      - remembrall
+    ports:
+      - "3001:3001"
+    depends_on:
+      - vector-db
 
-  # --- API (Phase 1: add api/Dockerfile, then uncomment) -------------------
-  # api:
-  #   build: ./api
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   volumes:
-  #     - uploads:/app/uploads
-  #   networks:
-  #     - remembrall
-  #   depends_on:
-  #     - vector-db
-  #     - llm-gateway
+  # --- Ingestion -----------------------------------------------------------
+  ingestion:
+    build: ./ingestion
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - remembrall
+    # Published for local development/testing only — not for production use.
+    ports:
+      - "8002:8000"
+    depends_on:
+      - vector-db
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
-  # --- LLM gateway (Phase 1: add llm-gateway/Dockerfile, then uncomment) ---
-  # llm-gateway:
-  #   build: ./llm-gateway
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   networks:
-  #     - remembrall
+  # --- API -----------------------------------------------------------------
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - remembrall
+    # Published for local development/testing only — not for production use.
+    ports:
+      - "8001:8000"
+    depends_on:
+      - vector-db
+      - llm-gateway
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
-  # --- Frontend (Phase 1: add frontend/Dockerfile, then uncomment) ---------
+  # --- LLM gateway ---------------------------------------------------------
+  llm-gateway:
+    build: ./llm-gateway
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - remembrall
+    # Published for local development/testing only — not for production use.
+    ports:
+      - "8003:8000"
+    healthcheck:
+      <<: *health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+
+  # --- Frontend (not yet active) -------------------------------------------
   # frontend:
   #   build: ./frontend
   #   restart: unless-stopped
   #   networks:
   #     - remembrall
 
-  # --- Reverse proxy: Caddy (Phase 6: add reverse-proxy/Caddyfile) ---------
+  # --- Reverse proxy: Caddy (not yet active) -------------------------------
   # reverse-proxy:
   #   image: caddy:latest
   #   restart: unless-stopped
@@ -81,4 +118,4 @@ networks:
 volumes:
   chroma-data:
   uploads:
-  # caddy-data:   # uncomment with the reverse-proxy service in Phase 6
+  # caddy-data:   # uncomment when the reverse-proxy service is activated

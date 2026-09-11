@@ -6,12 +6,15 @@ by retrieval-augmented generation over your own private data.
 
 ## Status
 
-**Early development — scaffolding stage.** The service layout and container
-orchestration are in place; the individual services are not yet implemented.
+**Early development.** The full stack builds and runs — every service starts and
+passes its health check — but the services are still skeletons without their core
+functionality.
 
-- ✅ Repository structure and `docker-compose.yml` skeleton
+- ✅ Repository structure and `docker-compose.yml`
 - ✅ Vector database (Chroma) wired into the stack
-- 🚧 Ingestion, API, LLM gateway, and frontend services — in progress
+- ✅ API, ingestion, and LLM gateway services start and report healthy
+- 🚧 Document ingestion, retrieval, and chat — not yet implemented
+- 🚧 Frontend — not yet started
 
 ## Architecture
 
