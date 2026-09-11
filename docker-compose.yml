@@ -74,6 +74,20 @@ services:
       <<: *health
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
+  # --- Ingestion test runner -----------------------------------------------
+  # Built from the ingestion image's "dev" stage (adds pytest + the test suite).
+  # Behind the "test" profile so it never starts with a normal `docker compose
+  # up`; run it explicitly with `docker compose run --rm ingestion-tests`.
+  ingestion-tests:
+    build:
+      context: ./ingestion
+      target: dev
+    profiles:
+      - test
+    env_file: .env
+    networks:
+      - remembrall
+
   # --- LLM gateway ---------------------------------------------------------
   llm-gateway:
     build: ./llm-gateway

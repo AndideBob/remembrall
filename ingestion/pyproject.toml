@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Put the service root on sys.path so tests can `import app...`, and only
+# collect from the tests directory.
+pythonpath = ["."]
+testpaths = ["tests"]

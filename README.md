@@ -45,3 +45,21 @@ docker compose up
 ```
 
 See [`.env.example`](.env.example) for all configuration options.
+
+## Running tests
+
+Each service ships its tests as a `<service>-tests` compose service (behind the
+`test` profile, so they never start with a normal `up`). Run everything:
+
+```bash
+bash scripts/run-tests.sh
+```
+
+The script discovers and runs every `*-tests` service. To run a single service's
+suite directly:
+
+```bash
+docker compose run --rm ingestion-tests
+```
+
+Per-service testing notes live in each service's own README.
